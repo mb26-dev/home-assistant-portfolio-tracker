@@ -2,6 +2,20 @@
 
 All notable changes to Portfolio Tracker are documented here.
 
+## 1.8.3.1 - 2026-11-21
+
+Private fork (mb26-dev) of DjangoToni/home-assistant-portfolio-tracker 1.8.3.
+
+- Swissquote is the primary quote source for stocks, ETFs, funds and other
+  assets; Yahoo Finance is the fallback. Indexes, FX and crypto unchanged.
+- Yahoo-style symbols are translated (NOVN.SW -> NOVN/CHF, SAP.DE -> SAP/EUR,
+  plain tickers -> USD); London prices in pence are converted to GBP.
+- General settings: toggle "Use Swissquote first" and optional mappings
+  SYMBOL = ISIN[@EXCHANGE_ID].
+- Assets unknown to Yahoo can be added when Swissquote knows them; their
+  30-day history comes from Swissquote.
+- New response action portfolio_tracker.swissquote_lookup.
+
 ## 1.8.3 - 2026-11-05
 
 - Hide active assets whose current portfolio value is exactly zero from the

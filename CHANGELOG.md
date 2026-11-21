@@ -2,6 +2,12 @@
 
 All notable changes to Portfolio Tracker are documented here.
 
+## 1.8.3.3 - 2026-11-21
+
+- ETFs, funds and other assets now get the 30-day history sensor like stocks.
+- When Yahoo returns no history for a listing that Swissquote quotes, the
+  history is loaded from Swissquote (previously only on Yahoo errors).
+
 ## 1.8.3.2 - 2026-11-21
 
 - Swissquote search moved to the endpoint swissquote.ch uses itself

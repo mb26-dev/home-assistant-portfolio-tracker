@@ -2,19 +2,33 @@
 
 All notable changes to Portfolio Tracker are documented here.
 
+## 1.8.3.2 - 2026-11-21
+
+- Swissquote search moved to the endpoint swissquote.ch uses itself
+  (POST securities-search-plugin/api/search/allGrouped); the legacy quick
+  search now only answers with a session cookie and is kept as fallback.
+  This also repairs the warrant lookup by valor number.
+- A ticker that matches different products in the same currency (e.g. WINC)
+  is no longer resolved automatically; pin it with an ISIN mapping.
+- Clearer error when Swissquote answers with HTML instead of JSON.
+
 ## 1.8.3.1 - 2026-11-21
 
 Private fork (mb26-dev) of DjangoToni/home-assistant-portfolio-tracker 1.8.3.
 
-- Swissquote is the primary quote source for stocks, ETFs, funds and other
-  assets; Yahoo Finance is the fallback. Indexes, FX and crypto unchanged.
-- Yahoo-style symbols are translated (NOVN.SW -> NOVN/CHF, SAP.DE -> SAP/EUR,
-  plain tickers -> USD); London prices in pence are converted to GBP.
-- General settings: toggle "Use Swissquote first" and optional mappings
-  SYMBOL = ISIN[@EXCHANGE_ID].
+- Swissquote is now the primary quote source for stocks, ETFs, funds and
+  other assets; Yahoo Finance remains the fallback when Swissquote has no
+  unambiguous listing or is unreachable. Indexes, FX rates and crypto are
+  unchanged.
+- Yahoo-style symbols are translated for Swissquote (`NOVN.SW` -> `NOVN` in
+  CHF, `SAP.DE` -> `SAP` in EUR, plain tickers -> USD). London prices in
+  pence are converted to GBP.
+- New general settings: toggle "Use Swissquote first" and optional
+  mappings `SYMBOL = ISIN[@EXCHANGE_ID]` to pin a listing.
 - Assets unknown to Yahoo can be added when Swissquote knows them; their
   30-day history comes from Swissquote.
-- New response action portfolio_tracker.swissquote_lookup.
+- New response action `portfolio_tracker.swissquote_lookup` shows the
+  Swissquote listings for a symbol and which one would be used.
 
 ## 1.8.3 - 2026-11-05
 

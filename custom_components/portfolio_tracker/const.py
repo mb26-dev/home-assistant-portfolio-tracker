@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "portfolio_tracker"
 PLATFORMS: Final = ["sensor", "binary_sensor"]
-FRONTEND_VERSION: Final = "1.8.3"
+FRONTEND_VERSION: Final = "1.8.3.1"
 FRONTEND_URL: Final = "/portfolio_tracker/frontend"
 
 CONF_PORTFOLIO_NAME: Final = "portfolio_name"
@@ -56,11 +56,16 @@ CONF_STRIKE: Final = "strike"
 CONF_RATIO: Final = "ratio"
 CONF_EXPIRY: Final = "expiry"
 CONF_TRADING_VENUE: Final = "trading_venue"
+CONF_SWISSQUOTE_PRIMARY: Final = "swissquote_primary"
+CONF_SWISSQUOTE_MAPPINGS: Final = "swissquote_mappings"
 
 DEFAULT_BASE_CURRENCY: Final = "CHF"
 DEFAULT_UPDATE_INTERVAL: Final = 15
 MIN_UPDATE_INTERVAL: Final = 5
 DEFAULT_PERSISTENT_NOTIFICATIONS: Final = True
+DEFAULT_SWISSQUOTE_PRIMARY: Final = True
+# Asset types that are quoted by Swissquote first when the option is enabled.
+SWISSQUOTE_PRIMARY_ASSET_TYPES: Final = {"stock", "etf", "fund", "other"}
 
 ASSET_TYPES: Final = ["stock", "etf", "crypto", "fund", "currency", "warrant", "other"]
 STANDARD_ASSET_TYPES: Final = [item for item in ASSET_TYPES if item != "warrant"]
@@ -141,6 +146,57 @@ def benchmark_index_for_entry(entry) -> str:
     if configured in indexes:
         return configured
     return indexes[0] if indexes else ""
+
+
+class SwissquoteMappingError(ValueError):
+    """Raised for an invalid Swissquote mapping line."""
+
+
+def parse_swissquote_mappings(text) -> dict[str, tuple[str | None, int | None]]:
+    """Parse ``SYMBOL = ISIN[@EXCHANGE_ID]`` lines.
+
+    ``AAPL = US0378331005`` pins a listing by ISIN, ``NOVN.SW = @4`` keeps the
+    ticker lookup but forces a Swissquote exchange ID, and
+    ``AAPL = US0378331005@1234`` does both. Empty lines and ``#`` comments are
+    ignored.
+    """
+    mappings: dict[str, tuple[str | None, int | None]] = {}
+    for line_number, raw_line in enumerate(str(text or "").splitlines(), start=1):
+        line = raw_line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if "=" not in line:
+            raise SwissquoteMappingError(f"line {line_number}: missing '='")
+        symbol, target = (part.strip() for part in line.split("=", 1))
+        symbol = symbol.upper()
+        if not symbol or len(symbol) > 80:
+            raise SwissquoteMappingError(f"line {line_number}: missing symbol")
+        isin_part, _, exchange_part = target.partition("@")
+        isin = isin_part.strip().upper() or None
+        if isin is not None and (
+            len(isin) != 12 or not isin[:2].isalpha() or not isin.isalnum()
+        ):
+            raise SwissquoteMappingError(f"line {line_number}: invalid ISIN")
+        exchange_id: int | None = None
+        if exchange_part.strip():
+            try:
+                exchange_id = int(exchange_part.strip())
+            except ValueError as err:
+                raise SwissquoteMappingError(
+                    f"line {line_number}: invalid exchange ID"
+                ) from err
+        if isin is None and exchange_id is None:
+            raise SwissquoteMappingError(f"line {line_number}: empty mapping")
+        mappings[symbol] = (isin, exchange_id)
+    return mappings
+
+
+def safe_swissquote_mappings(text) -> dict[str, tuple[str | None, int | None]]:
+    """Parse mappings, ignoring the whole block if it is invalid."""
+    try:
+        return parse_swissquote_mappings(text)
+    except SwissquoteMappingError:
+        return {}
 
 
 def entry_value(entry, key: str, default=None):

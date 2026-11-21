@@ -34,6 +34,8 @@ from .const import (
     CONF_PRICE_ENTITY,
     CONF_PRICE_MODE,
     CONF_PRICE_SOURCE,
+    CONF_SWISSQUOTE_MAPPINGS,
+    CONF_SWISSQUOTE_PRIMARY,
     CONF_TRADING_VENUE,
     CONF_VALOR,
     CONF_TRANSACTION_CURRENCY,
@@ -42,17 +44,20 @@ from .const import (
     DEFAULT_BASE_CURRENCY,
     DEFAULT_INDEXES,
     DEFAULT_PERSISTENT_NOTIFICATIONS,
+    DEFAULT_SWISSQUOTE_PRIMARY,
     DEFAULT_UPDATE_INTERVAL,
     DOMAIN,
+    SWISSQUOTE_PRIMARY_ASSET_TYPES,
     coingecko_id_for_holding,
     crypto_currency_for_holding,
     crypto_data_key,
     entry_value,
+    safe_swissquote_mappings,
 )
 from .models import PortfolioData, Quote, StockHistoryPoint
 from .calculator import holding_alert_price
 from .yahoo import YahooFinanceClient
-from .swissquote import SwissquoteClient
+from .swissquote import SwissquoteClient, SwissquoteSecurityNotFound
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -134,15 +139,37 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
             for holding in holdings
             if holding.get(CONF_PRICE_SOURCE, "yahoo") == "swissquote"
         ]
-        symbols = sorted(
-            {
-                holding["symbol"].upper()
-                for holding in holdings
-                if holding.get(CONF_PRICE_SOURCE, "yahoo") == "yahoo"
-            }
-            | {symbol.upper() for symbol in indexes}
+        swissquote_primary = bool(
+            entry_value(
+                self.entry, CONF_SWISSQUOTE_PRIMARY, DEFAULT_SWISSQUOTE_PRIMARY
+            )
         )
-        if not symbols and not external_holdings and not swissquote_holdings:
+        swissquote_mappings = safe_swissquote_mappings(
+            entry_value(self.entry, CONF_SWISSQUOTE_MAPPINGS, "")
+        )
+        # Stocks, ETFs and funds: Swissquote first, Yahoo as fallback.
+        primary_holdings: dict[str, dict] = {}
+        if swissquote_primary:
+            for holding in holdings:
+                if holding.get(CONF_PRICE_SOURCE, "yahoo") != "yahoo":
+                    continue
+                if (
+                    holding.get(CONF_ASSET_TYPE, "stock")
+                    not in SWISSQUOTE_PRIMARY_ASSET_TYPES
+                ):
+                    continue
+                primary_holdings.setdefault(holding["symbol"].upper(), holding)
+        yahoo_holding_symbols = {
+            holding["symbol"].upper()
+            for holding in holdings
+            if holding.get(CONF_PRICE_SOURCE, "yahoo") == "yahoo"
+        }
+        if (
+            not yahoo_holding_symbols
+            and not indexes
+            and not external_holdings
+            and not swissquote_holdings
+        ):
             return PortfolioData(
                 quotes={}, fx_rates={base: Decimal(1)}, base_currency=base
             )
@@ -181,6 +208,32 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
                         raise
                 raise RuntimeError("Unreachable Swissquote retry state")
 
+        async def fetch_primary(symbol: str) -> Quote:
+            isin, exchange_id = swissquote_mappings.get(symbol, (None, None))
+            async with request_limit:
+                for attempt in range(2):
+                    try:
+                        return await self.swissquote.async_get_security_quote(
+                            symbol, isin=isin, exchange_id=exchange_id
+                        )
+                    except SwissquoteSecurityNotFound:
+                        raise
+                    except Exception:
+                        if attempt == 0:
+                            await asyncio.sleep(1)
+                            continue
+                        raise
+                raise RuntimeError("Unreachable Swissquote primary retry state")
+
+        async def fetch_primary_history(
+            symbol: str,
+        ) -> tuple[StockHistoryPoint, ...]:
+            isin, exchange_id = swissquote_mappings.get(symbol, (None, None))
+            async with request_limit:
+                return await self.swissquote.async_get_security_history(
+                    symbol, isin=isin, exchange_id=exchange_id
+                )
+
         async def fetch_swissquote_history(
             holding: dict,
         ) -> tuple[StockHistoryPoint, ...]:
@@ -200,6 +253,31 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
                         raise
                 raise RuntimeError("Unreachable Swissquote history retry state")
 
+        primary_symbols = sorted(primary_holdings)
+        primary_results = await asyncio.gather(
+            *(fetch_primary(symbol) for symbol in primary_symbols),
+            return_exceptions=True,
+        )
+        primary_quotes: dict[str, Quote] = {}
+        for symbol, result in zip(primary_symbols, primary_results, strict=True):
+            if isinstance(result, SwissquoteSecurityNotFound):
+                _LOGGER.debug(
+                    "Swissquote has no unambiguous listing for %s; using Yahoo",
+                    symbol,
+                )
+            elif isinstance(result, BaseException):
+                _LOGGER.info(
+                    "Swissquote quote for %s failed, falling back to Yahoo: %s",
+                    symbol,
+                    result,
+                )
+            else:
+                primary_quotes[symbol] = result
+
+        symbols = sorted(
+            (yahoo_holding_symbols - set(primary_quotes))
+            | {symbol.upper() for symbol in indexes}
+        )
         results = await asyncio.gather(
             *(fetch_quote(symbol) for symbol in symbols),
             return_exceptions=True,
@@ -208,7 +286,7 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
             *(fetch_swissquote(holding) for holding in swissquote_holdings),
             return_exceptions=True,
         )
-        quote_symbols = set(symbols) | {
+        quote_symbols = set(symbols) | set(primary_quotes) | {
             holding["symbol"].upper()
             for holding in external_holdings + swissquote_holdings
         }
@@ -218,6 +296,9 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
             if symbol in quote_symbols
         }
         updated_quotes = 0
+        for symbol, quote in primary_quotes.items():
+            quotes[symbol] = quote
+            updated_quotes += 1
         for symbol, result in zip(symbols, results, strict=True):
             if isinstance(result, BaseException):
                 _LOGGER.warning("Could not update %s: %s", symbol, result)
@@ -246,7 +327,9 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
                 "No portfolio price source returned a quote; entities remain loaded "
                 "and will retry during the next scheduled update"
             )
-        elif (symbols or swissquote_holdings) and updated_quotes == 0:
+        elif (
+            symbols or swissquote_holdings or primary_symbols
+        ) and updated_quotes == 0:
             _LOGGER.warning(
                 "No cloud price source returned a fresh quote; retaining the "
                 "last successful portfolio data"
@@ -385,6 +468,7 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
             for symbol, history in (previous.stock_history.items() if previous else ())
             if symbol in retained_history_symbols
         }
+        yahoo_history_failed: set[str] = set()
         if history_symbols:
             stock_results = await asyncio.gather(
                 self.client.async_get_stock_markets(detail_symbols),
@@ -406,6 +490,9 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
                 history_symbols, stock_results[1:], strict=True
             ):
                 if isinstance(result, BaseException):
+                    if symbol.upper() in primary_quotes:
+                        yahoo_history_failed.add(symbol)
+                        continue
                     _LOGGER.warning(
                         "Could not update Yahoo stock history for %s: %s",
                         symbol,
@@ -413,6 +500,32 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
                     )
                 else:
                     stock_history[symbol] = result
+
+        # Yahoo does not know some listings Swissquote quotes (e.g. WINC).
+        primary_history_symbols = sorted(
+            symbol
+            for symbol in yahoo_history_failed
+            if symbol.upper() in primary_quotes
+        )
+        primary_history_results = await asyncio.gather(
+            *(
+                fetch_primary_history(symbol.upper())
+                for symbol in primary_history_symbols
+            ),
+            return_exceptions=True,
+        )
+        for symbol, result in zip(
+            primary_history_symbols, primary_history_results, strict=True
+        ):
+            if isinstance(result, BaseException):
+                _LOGGER.warning(
+                    "Could not update stock history for %s from Yahoo or "
+                    "Swissquote: %s",
+                    symbol,
+                    result,
+                )
+            elif result:
+                stock_history[symbol] = result
 
         swissquote_history_results = await asyncio.gather(
             *(

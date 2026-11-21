@@ -32,6 +32,7 @@ from .const import (
 )
 from .coordinator import PortfolioCoordinator
 from .registry import active_device_identifiers
+from .services import async_register_services
 from .transactions import migrate_opening_transactions
 from .websocket_api import register as register_portfolio_websocket
 
@@ -53,6 +54,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Register the automatically loaded Portfolio Tracker dashboard card."""
     await _async_register_frontend(hass)
     register_portfolio_websocket(hass)
+    async_register_services(hass)
     return True
 
 

@@ -41,6 +41,8 @@ from .const import (
     CONF_RATIO,
     CONF_EXPIRY,
     CONF_STRIKE,
+    CONF_SWISSQUOTE_MAPPINGS,
+    CONF_SWISSQUOTE_PRIMARY,
     CONF_SYMBOL,
     CONF_TRANSACTION_CURRENCY,
     CONF_TRANSACTION_DATE,
@@ -67,6 +69,7 @@ from .const import (
     DEFAULT_BENCHMARK_INDEX,
     DEFAULT_INDEXES,
     DEFAULT_PERSISTENT_NOTIFICATIONS,
+    DEFAULT_SWISSQUOTE_PRIMARY,
     DEFAULT_UPDATE_INTERVAL,
     DOMAIN,
     INDEX_PRESETS,
@@ -74,17 +77,22 @@ from .const import (
     PRICE_SOURCES,
     PRICE_MODES,
     STANDARD_ASSET_TYPES,
+    SWISSQUOTE_PRIMARY_ASSET_TYPES,
+    SwissquoteMappingError,
     TRANSACTION_PRICE_MODES,
     TRANSACTION_TYPES,
     WARRANT_TYPES,
     WARRANT_VENUES,
     coingecko_id_for_holding,
     entry_value,
+    parse_swissquote_mappings,
+    safe_swissquote_mappings,
 )
 from .transactions import opening_transaction, transaction_balances_are_valid
 from .swissquote import (
     SwissquoteClient,
     SwissquoteError,
+    SwissquoteSecurityNotFound,
     SwissquoteWarrantNotFound,
 )
 from .yahoo import YahooFinanceClient, YahooFinanceError, YahooSymbolNotFound
@@ -158,7 +166,11 @@ def _optional_alert_field(key: str, defaults: dict[str, Any]) -> Any:
 
 
 def _general_schema(
-    defaults: dict[str, Any], *, include_name: bool = True, default_name: str = "My Portfolio"
+    defaults: dict[str, Any],
+    *,
+    include_name: bool = True,
+    default_name: str = "My Portfolio",
+    include_swissquote: bool = False,
 ) -> vol.Schema:
     schema: dict[Any, Any] = {}
     if include_name:
@@ -183,6 +195,22 @@ def _general_schema(
         vol.Coerce(int),
         vol.Range(min=MIN_UPDATE_INTERVAL, max=1440),
     )
+    if include_swissquote:
+        primary = defaults.get(CONF_SWISSQUOTE_PRIMARY)
+        schema[
+            vol.Required(
+                CONF_SWISSQUOTE_PRIMARY,
+                default=(
+                    DEFAULT_SWISSQUOTE_PRIMARY if primary is None else bool(primary)
+                ),
+            )
+        ] = selector.BooleanSelector()
+        schema[
+            vol.Optional(
+                CONF_SWISSQUOTE_MAPPINGS,
+                default=str(defaults.get(CONF_SWISSQUOTE_MAPPINGS) or ""),
+            )
+        ] = selector.TextSelector(selector.TextSelectorConfig(multiline=True))
     return vol.Schema(schema)
 
 
@@ -704,11 +732,17 @@ class PortfolioOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             currency = _normalize_currency(user_input[CONF_BASE_CURRENCY])
+            mappings_text = str(user_input.get(CONF_SWISSQUOTE_MAPPINGS) or "")
+            try:
+                parse_swissquote_mappings(mappings_text)
+            except SwissquoteMappingError:
+                errors[CONF_SWISSQUOTE_MAPPINGS] = "invalid_swissquote_mapping"
             if currency is None:
                 errors[CONF_BASE_CURRENCY] = "invalid_currency"
-            else:
+            elif not errors:
                 options = dict(self._entry.options)
                 options.update(user_input)
+                options[CONF_SWISSQUOTE_MAPPINGS] = mappings_text.strip()
                 options[CONF_BASE_CURRENCY] = currency
                 options[CONF_UPDATE_INTERVAL] = int(options[CONF_UPDATE_INTERVAL])
                 return self.async_create_entry(data=options)
@@ -717,11 +751,17 @@ class PortfolioOptionsFlow(config_entries.OptionsFlow):
             for key in (
                 CONF_BASE_CURRENCY,
                 CONF_UPDATE_INTERVAL,
+                CONF_SWISSQUOTE_PRIMARY,
+                CONF_SWISSQUOTE_MAPPINGS,
             )
         }
         return self.async_show_form(
             step_id="general",
-            data_schema=_general_schema(user_input or defaults, include_name=False),
+            data_schema=_general_schema(
+                user_input or defaults,
+                include_name=False,
+                include_swissquote=True,
+            ),
             errors=errors,
         )
 
@@ -1144,6 +1184,16 @@ class PortfolioOptionsFlow(config_entries.OptionsFlow):
             CONF_TRANSACTION_NOTE: user_input[CONF_TRANSACTION_NOTE].strip(),
         }
 
+    def _swissquote_primary_for(self, user_input: dict[str, Any]) -> bool:
+        """Return whether Swissquote may quote this non-warrant asset."""
+        enabled = entry_value(
+            self._entry, CONF_SWISSQUOTE_PRIMARY, DEFAULT_SWISSQUOTE_PRIMARY
+        )
+        return bool(enabled) and (
+            str(user_input.get(CONF_ASSET_TYPE, "stock"))
+            in SWISSQUOTE_PRIMARY_ASSET_TYPES
+        )
+
     async def _async_validate_holding(
         self, user_input: dict[str, Any], errors: dict[str, str]
     ) -> dict[str, Any] | None:
@@ -1242,14 +1292,35 @@ class PortfolioOptionsFlow(config_entries.OptionsFlow):
             quote_currency = quote.currency
         else:
             price_mode = "state"
+            quote = None
+            yahoo_error = None
             try:
                 client = YahooFinanceClient(async_get_clientsession(self.hass))
                 quote = await client.async_get_quote(symbol)
             except YahooSymbolNotFound:
-                errors[CONF_SYMBOL] = "symbol_not_found"
-                return None
+                yahoo_error = "symbol_not_found"
             except YahooFinanceError:
-                errors["base"] = "cannot_connect"
+                yahoo_error = "cannot_connect"
+            if quote is None and self._swissquote_primary_for(user_input):
+                # Yahoo does not know every listing; Swissquote may.
+                isin, exchange_id = safe_swissquote_mappings(
+                    entry_value(self._entry, CONF_SWISSQUOTE_MAPPINGS, "")
+                ).get(symbol, (None, None))
+                try:
+                    quote = await SwissquoteClient(
+                        async_get_clientsession(self.hass)
+                    ).async_get_security_quote(
+                        symbol, isin=isin, exchange_id=exchange_id
+                    )
+                except SwissquoteSecurityNotFound:
+                    pass
+                except SwissquoteError:
+                    yahoo_error = yahoo_error or "swissquote_cannot_connect"
+            if quote is None:
+                if yahoo_error == "symbol_not_found":
+                    errors[CONF_SYMBOL] = yahoo_error
+                else:
+                    errors["base"] = yahoo_error or "cannot_connect"
                 return None
             quote_symbol = quote.symbol
             quote_name = quote.name

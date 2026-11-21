@@ -1,0 +1,19 @@
+swissquote_lookup:
+  fields:
+    symbol:
+      required: true
+      example: "WINC"
+      selector:
+        text:
+    isin:
+      required: false
+      example: "US0378331005"
+      selector:
+        text:
+    exchange_id:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 100000
+          mode: box

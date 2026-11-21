@@ -315,6 +315,13 @@ async def async_setup_entry(
             and holding.get(CONF_PRICE_SOURCE, "yahoo") in {"yahoo", "swissquote"}
         ):
             entities.append(StockHistorySensor(coordinator, entry, holding))
+        if (
+            holding[CONF_ASSET_TYPE] in {"etf", "fund", "other"}
+            and holding.get(CONF_PRICE_SOURCE, "yahoo") == "yahoo"
+        ):
+            # ETFs and funds get the same 30-day history as stocks
+            # (Yahoo, or Swissquote when Yahoo has no data for the listing).
+            entities.append(StockHistorySensor(coordinator, entry, holding))
     for symbol in indexes:
         entities.extend(
             [

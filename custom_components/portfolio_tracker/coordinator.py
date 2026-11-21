@@ -489,17 +489,20 @@ class PortfolioCoordinator(DataUpdateCoordinator[PortfolioData]):
             for symbol, result in zip(
                 history_symbols, stock_results[1:], strict=True
             ):
-                if isinstance(result, BaseException):
+                if isinstance(result, BaseException) or not result:
                     if symbol.upper() in primary_quotes:
+                        # Yahoo has no (usable) history for this listing;
+                        # Swissquote quotes it, so take its history instead.
                         yahoo_history_failed.add(symbol)
                         continue
-                    _LOGGER.warning(
-                        "Could not update Yahoo stock history for %s: %s",
-                        symbol,
-                        result,
-                    )
-                else:
-                    stock_history[symbol] = result
+                    if isinstance(result, BaseException):
+                        _LOGGER.warning(
+                            "Could not update Yahoo stock history for %s: %s",
+                            symbol,
+                            result,
+                        )
+                        continue
+                stock_history[symbol] = result
 
         # Yahoo does not know some listings Swissquote quotes (e.g. WINC).
         primary_history_symbols = sorted(

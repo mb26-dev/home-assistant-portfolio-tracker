@@ -24,7 +24,7 @@ from .swissquote import (
 )
 
 SERVICE_SWISSQUOTE_LOOKUP = "swissquote_lookup"
-_RAW_FIELDS = ("symbol", "isin", "exchangeId", "currency", "type", "name")
+_RAW_FIELDS = ("symbol", "isin", "exchangeId", "currency", "type", "name", "market")
 
 LOOKUP_SCHEMA = vol.Schema(
     {

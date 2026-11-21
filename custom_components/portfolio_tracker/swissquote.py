@@ -7,6 +7,7 @@ ISIN, so Swissquote can act as primary quote source with Yahoo as fallback.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from datetime import date, datetime, timedelta
@@ -17,6 +18,11 @@ from aiohttp import ClientError, ClientSession
 
 from .models import Quote, StockHistoryPoint
 
+# Current public search used by swissquote.ch itself (POST JSON, no session).
+SEARCH_V2_URL = (
+    "https://www.swissquote.ch/securities-search-plugin/api/search/allGrouped"
+)
+# Legacy quick search; since late 2026 it only answers with a session cookie.
 SEARCH_URL = (
     "https://www.swissquote.ch/sqi_web_search/search/quicksearch/init/0/20"
 )
@@ -31,7 +37,7 @@ HISTORY_URL = (
 HEADERS = {
     "Accept": "application/json",
     "Accept-Language": "en-US,en;q=0.9",
-    "User-Agent": "Home-Assistant-Portfolio-Tracker/1.8.3.1",
+    "User-Agent": "Home-Assistant-Portfolio-Tracker/1.8.3.2",
 }
 VENUE_EXCHANGE_IDS = {"six": 4, "swiss_dots": 672}
 # A failed security lookup is not repeated before this many seconds.
@@ -97,14 +103,31 @@ class SwissquoteClient:
         self._security_misses: dict[tuple[str, str, int | None], float] = {}
 
     async def async_search(self, search_text: str) -> list[dict]:
-        """Return the raw Swissquote quick-search items for diagnostics."""
-        payload = await self._async_get_json(
-            SEARCH_URL, params={"searchText": search_text.strip()}
-        )
-        items = payload.get("data")
-        return [item for item in items if isinstance(item, dict)] if isinstance(
-            items, list
-        ) else []
+        """Return normalized Swissquote search items.
+
+        Each item has ``symbol``, ``isin``, ``exchangeId``, ``currency``,
+        ``type``, ``name`` and ``market``. The current search endpoint is
+        tried first, the legacy quick search only as fallback.
+        """
+        term = search_text.strip()
+        try:
+            payload = await self._async_post_json(
+                SEARCH_V2_URL, params={}, body={"count": 100, "searchTerm": term}
+            )
+            return normalize_search_v2(payload)
+        except SwissquoteError as v2_error:
+            try:
+                payload = await self._async_get_json(
+                    SEARCH_URL, params={"searchText": term}
+                )
+            except SwissquoteError:
+                raise v2_error from None
+            items = payload.get("data")
+            return (
+                [item for item in items if isinstance(item, dict)]
+                if isinstance(items, list)
+                else []
+            )
 
     async def async_get_security_quote(
         self,
@@ -187,9 +210,7 @@ class SwissquoteClient:
         for search_term in search_terms:
             if not search_term:
                 continue
-            search_payload = await self._async_get_json(
-                SEARCH_URL, params={"searchText": search_term}
-            )
+            search_payload = {"data": await self.async_search(search_term)}
             item = find_security(
                 search_payload,
                 tickers=tickers,
@@ -295,10 +316,7 @@ class SwissquoteClient:
         if trading_venue not in VENUE_EXCHANGE_IDS:
             search_terms.append(_swiss_isin_for_valor(normalized_valor))
         for search_term in search_terms:
-            search_payload = await self._async_get_json(
-                SEARCH_URL,
-                params={"searchText": search_term},
-            )
+            search_payload = {"data": await self.async_search(search_term)}
             item = _find_warrant(
                 search_payload,
                 normalized_valor,
@@ -335,7 +353,15 @@ class SwissquoteClient:
                 timeout=20,
             ) as response:
                 response.raise_for_status()
-                payload = await response.json(content_type=None)
+                text = await response.text()
+                try:
+                    payload = json.loads(text)
+                except ValueError as err:
+                    raise SwissquoteError(
+                        "Swissquote answered with "
+                        f"{response.headers.get('Content-Type', 'unknown')} "
+                        "instead of JSON"
+                    ) from err
         except (ClientError, TimeoutError, ValueError) as err:
             raise SwissquoteError(f"Could not load Swissquote data: {err}") from err
         if not isinstance(payload, dict):
@@ -535,6 +561,12 @@ def find_security(
         candidates.append(item)
     if not candidates:
         return None
+    if not isin and len(
+        {str(item.get("isin", "")).strip().upper() for item in candidates}
+    ) > 1:
+        # Same ticker and currency for different products (e.g. WINC is both
+        # an iShares UCITS ETF in USD and a US ETF): require an ISIN mapping.
+        return None
 
     def rank(item: dict) -> tuple[int, int]:
         currency = str(item.get("currency", "")).strip().upper()
@@ -546,6 +578,38 @@ def find_security(
         return (currency_rank, symbol_rank)
 
     return min(candidates, key=rank)
+
+
+def normalize_search_v2(payload: dict) -> list[dict]:
+    """Flatten the current Swissquote search answer into simple listings."""
+    securities = payload.get("securities")
+    if not isinstance(securities, list):
+        raise SwissquoteError("Swissquote search returned no securities")
+    items: list[dict] = []
+
+    def walk(entries) -> None:
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            key = entry.get("stockKey")
+            if isinstance(key, dict) and key.get("isin"):
+                items.append(
+                    {
+                        "symbol": str(entry.get("symbol") or ""),
+                        "isin": str(key.get("isin") or ""),
+                        "exchangeId": key.get("exchangeId"),
+                        "currency": str(key.get("currency") or ""),
+                        "type": str(entry.get("type") or ""),
+                        "name": str(entry.get("name") or ""),
+                        "market": str(entry.get("market") or ""),
+                    }
+                )
+            children = entry.get("children")
+            if isinstance(children, list):
+                walk(children)
+
+    walk(securities)
+    return items
 
 
 def _stock_key(item: dict) -> tuple[str, int, str]:

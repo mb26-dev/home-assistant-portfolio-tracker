@@ -19,5 +19,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/mb26-dev/home-assistant-portfolio-tracker/issues",
   "requirements": [],
-  "version": "1.8.3.1"
+  "version": "1.8.3.2"
 }

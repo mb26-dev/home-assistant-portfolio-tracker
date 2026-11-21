@@ -77,7 +77,13 @@
         "title": "Paramètres généraux",
         "data": {
           "base_currency": "Devise de base",
-          "update_interval": "Intervalle d'actualisation"
+          "update_interval": "Intervalle d'actualisation",
+          "swissquote_primary": "Utiliser d'abord Swissquote pour les actions, ETF et fonds",
+          "swissquote_mappings": "Correspondances Swissquote (facultatif)"
+        },
+        "data_description": {
+          "swissquote_primary": "Les cours des actions, ETF et fonds sont d'abord chargés depuis Swissquote. Yahoo Finance est utilisé si Swissquote ne trouve pas de cotation univoque.",
+          "swissquote_mappings": "Une ligne par symbole : SYMBOLE = ISIN, SYMBOLE = ISIN@ID_BOURSE ou SYMBOLE = @ID_BOURSE. Exemple : AAPL = US0378331005."
         }
       },
       "add_holding": {
@@ -272,7 +278,8 @@
       "invalid_valor": "Le numéro de valeur suisse ne peut pas contenir plus de neuf chiffres.",
       "swissquote_cannot_connect": "Impossible de se connecter à Swissquote.",
       "swissquote_warrant_not_found": "Swissquote n'a pas trouvé ce numéro de valeur sur la place de négoce sélectionnée.",
-      "insufficient_quantity": "Cette vente dépasserait la quantité disponible à la date sélectionnée."
+      "insufficient_quantity": "Cette vente dépasserait la quantité disponible à la date sélectionnée.",
+      "invalid_swissquote_mapping": "Correspondance Swissquote invalide. Format : SYMBOLE = ISIN, SYMBOLE = ISIN@ID_BOURSE ou SYMBOLE = @ID_BOURSE, une par ligne."
     }
   },
   "selector": {
@@ -569,6 +576,26 @@
       },
       "price_alert_above": {
         "name": "Alerte de prix supérieur"
+      }
+    }
+  },
+  "services": {
+    "swissquote_lookup": {
+      "name": "Recherche Swissquote",
+      "description": "Affiche les cotations Swissquote d'un symbole ou d'un ISIN et celle que le suivi de portefeuille utiliserait.",
+      "fields": {
+        "symbol": {
+          "name": "Symbole",
+          "description": "Symbole au format Yahoo, p. ex. WINC, NOVN.SW ou SAP.DE."
+        },
+        "isin": {
+          "name": "ISIN",
+          "description": "ISIN facultatif pour fixer la cotation."
+        },
+        "exchange_id": {
+          "name": "ID de bourse",
+          "description": "ID de bourse Swissquote facultatif."
+        }
       }
     }
   }

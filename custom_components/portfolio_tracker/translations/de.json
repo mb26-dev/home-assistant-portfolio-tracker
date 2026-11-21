@@ -77,7 +77,13 @@
         "title": "Allgemeine Einstellungen",
         "data": {
           "base_currency": "Basiswährung",
-          "update_interval": "Aktualisierungsintervall"
+          "update_interval": "Aktualisierungsintervall",
+          "swissquote_primary": "Swissquote zuerst für Aktien, ETFs und Fonds verwenden",
+          "swissquote_mappings": "Swissquote-Zuordnungen (optional)"
+        },
+        "data_description": {
+          "swissquote_primary": "Kurse für Aktien, ETFs und Fonds werden zuerst bei Swissquote abgefragt. Findet Swissquote kein eindeutiges Listing, wird Yahoo Finance verwendet.",
+          "swissquote_mappings": "Eine Zeile pro Symbol: SYMBOL = ISIN oder SYMBOL = ISIN@BÖRSEN_ID oder SYMBOL = @BÖRSEN_ID. Beispiel: AAPL = US0378331005. ISIN und Börsen-ID findest du mit der Aktion swissquote_lookup."
         }
       },
       "add_holding": {
@@ -93,9 +99,9 @@
           "transaction_market_price": "Marktkurs pro Einheit beim Kauf (optional)",
           "transaction_market_currency": "Währung des Marktkurses (optional)",
           "coingecko_id": "CoinGecko-ID (nur Kryptowährungen)",
-          "display_currency": "Anzeigewährung (nur Kryptowährungen)"
-          ,"alert_below": "Alarm unter diesem Kurs (optional)"
-          ,"alert_above": "Alarm über diesem Kurs (optional)"
+          "display_currency": "Anzeigewährung (nur Kryptowährungen)",
+          "alert_below": "Alarm unter diesem Kurs (optional)",
+          "alert_above": "Alarm über diesem Kurs (optional)"
         }
       },
       "add_watchlist": {
@@ -143,7 +149,9 @@
       },
       "edit_holding": {
         "title": "Asset auswählen",
-        "data": { "holding_id": "Aktives oder beobachtetes Asset" }
+        "data": {
+          "holding_id": "Aktives oder beobachtetes Asset"
+        }
       },
       "edit_holding_details": {
         "title": "Position bearbeiten",
@@ -155,44 +163,52 @@
           "quantity": "Stückzahl",
           "average_price": "Durchschnittlicher Kaufpreis",
           "coingecko_id": "CoinGecko-ID (nur Kryptowährungen)",
-          "display_currency": "Anzeigewährung (nur Kryptowährungen)"
-          ,"alert_below": "Alarm unter diesem Kurs (optional)"
-          ,"alert_above": "Alarm über diesem Kurs (optional)"
-          ,"price_source": "Kursquelle"
-          ,"price_entity": "Home-Assistant-Kurssensor"
-          ,"price_mode": "Zu verwendender Kurs"
-          ,"price_currency": "Kurswährung"
-          ,"trading_venue": "Handelsplatz"
-          ,"isin": "ISIN"
-          ,"wkn": "WKN"
-          ,"valor": "Valorennummer"
-          ,"issuer": "Emittent"
-          ,"underlying": "Basiswert"
-          ,"warrant_type": "Warrant-Typ"
-          ,"strike": "Ausübungspreis"
-          ,"ratio": "Bezugsverhältnis"
-          ,"expiry": "Verfallsdatum"
-          ,"watch_only": "Nur beobachten; nicht ins Portfolio einrechnen"
+          "display_currency": "Anzeigewährung (nur Kryptowährungen)",
+          "alert_below": "Alarm unter diesem Kurs (optional)",
+          "alert_above": "Alarm über diesem Kurs (optional)",
+          "price_source": "Kursquelle",
+          "price_entity": "Home-Assistant-Kurssensor",
+          "price_mode": "Zu verwendender Kurs",
+          "price_currency": "Kurswährung",
+          "trading_venue": "Handelsplatz",
+          "isin": "ISIN",
+          "wkn": "WKN",
+          "valor": "Valorennummer",
+          "issuer": "Emittent",
+          "underlying": "Basiswert",
+          "warrant_type": "Warrant-Typ",
+          "strike": "Ausübungspreis",
+          "ratio": "Bezugsverhältnis",
+          "expiry": "Verfallsdatum",
+          "watch_only": "Nur beobachten; nicht ins Portfolio einrechnen"
         }
       },
       "remove_holding": {
         "title": "Asset entfernen",
         "description": "Das ausgewählte Asset und seine Entitäten werden entfernt.",
-        "data": { "holding_id": "Aktives oder beobachtetes Asset" }
+        "data": {
+          "holding_id": "Aktives oder beobachtetes Asset"
+        }
       },
       "add_index": {
         "title": "Marktindex hinzufügen",
         "description": "Wähle einen Vergleichsindex. Er erscheint als eigenes Gerät und in der Portfolio-Übersicht.",
-        "data": { "index_symbol": "Marktindex" }
+        "data": {
+          "index_symbol": "Marktindex"
+        }
       },
       "remove_index": {
         "title": "Marktindex entfernen",
-        "data": { "index_symbol": "Marktindex" }
+        "data": {
+          "index_symbol": "Marktindex"
+        }
       },
       "configure_benchmark": {
         "title": "Vergleichsindex für die Performance",
         "description": "Wähle den Marktindex für den Performancevergleich oder wähle keinen Vergleichsindex.",
-        "data": { "benchmark_index": "Vergleichsindex" }
+        "data": {
+          "benchmark_index": "Vergleichsindex"
+        }
       },
       "add_transaction": {
         "title": "Transaktion hinzufügen",
@@ -215,7 +231,9 @@
       },
       "edit_transaction": {
         "title": "Transaktion auswählen",
-        "data": { "transaction_id": "Transaktion" }
+        "data": {
+          "transaction_id": "Transaktion"
+        }
       },
       "edit_transaction_details": {
         "title": "Transaktion bearbeiten",
@@ -237,7 +255,9 @@
       "remove_transaction": {
         "title": "Transaktion entfernen",
         "description": "Die ausgewählte Transaktion wird dauerhaft aus dem Positionsjournal entfernt.",
-        "data": { "transaction_id": "Transaktion" }
+        "data": {
+          "transaction_id": "Transaktion"
+        }
       }
     },
     "error": {
@@ -258,7 +278,8 @@
       "invalid_valor": "Die Schweizer Valorennummer darf höchstens neun Ziffern enthalten.",
       "swissquote_cannot_connect": "Swissquote konnte nicht erreicht werden.",
       "swissquote_warrant_not_found": "Swissquote hat diese Valorennummer am ausgewählten Handelsplatz nicht gefunden.",
-      "insufficient_quantity": "Dieser Verkauf überschreitet den am gewählten Datum verfügbaren Bestand."
+      "insufficient_quantity": "Dieser Verkauf überschreitet den am gewählten Datum verfügbaren Bestand.",
+      "invalid_swissquote_mapping": "Ungültige Swissquote-Zuordnung. Format: SYMBOL = ISIN, SYMBOL = ISIN@BÖRSEN_ID oder SYMBOL = @BÖRSEN_ID, eine pro Zeile."
     }
   },
   "selector": {
@@ -317,87 +338,265 @@
   },
   "entity": {
     "sensor": {
-      "portfolio_value": { "name": "Wert" },
-      "portfolio_cost": { "name": "Einstandswert" },
-      "portfolio_gain": { "name": "Gewinn/Verlust" },
-      "portfolio_realized_gain": { "name": "Realisierter Gewinn/Verlust" },
-      "portfolio_fees": { "name": "Transaktionsgebühren" },
-      "portfolio_taxes": { "name": "Transaktionssteuern" },
-      "portfolio_purchases": { "name": "Käufe kumuliert" },
-      "portfolio_sales": { "name": "Verkäufe kumuliert" },
-      "portfolio_net_invested": { "name": "Netto investiertes Kapital" },
-      "portfolio_total_gain": { "name": "Gesamter Gewinn/Verlust" },
-      "portfolio_total_return": { "name": "Gesamtrendite" },
-      "portfolio_transaction_count": { "name": "Anzahl Transaktionen" },
-      "portfolio_time_weighted_return": { "name": "Zeitgewichtete Rendite" },
-      "portfolio_benchmark_return": { "name": "Rendite des Vergleichsindex" },
-      "portfolio_excess_return": { "name": "Überrendite" },
-      "portfolio_performance_history": { "name": "Professioneller Performanceverlauf" },
-      "portfolio_gain_percent": { "name": "Rendite" },
-      "portfolio_daily_change": { "name": "Tagesveränderung" },
-      "holding_price": { "name": "Kurs" },
-      "holding_quantity": { "name": "Bestand" },
-      "holding_purchase_price": { "name": "Durchschnittlicher Kaufpreis" },
-      "holding_cost": { "name": "Einstandswert" },
-      "holding_value": { "name": "Wert" },
-      "holding_gain": { "name": "Gewinn/Verlust" },
-      "holding_realized_gain": { "name": "Realisierter Gewinn/Verlust" },
-      "holding_fees": { "name": "Transaktionsgebühren" },
-      "holding_taxes": { "name": "Transaktionssteuern" },
-      "holding_transactions": { "name": "Transaktionen" },
-      "holding_gain_percent": { "name": "Rendite" },
-      "holding_daily_change": { "name": "Tagesveränderung" },
-      "holding_previous_close": { "name": "Vorheriger Schlusskurs" },
-      "index_price": { "name": "Indexstand" },
-      "index_previous_close": { "name": "Vorheriger Schlussstand" },
-      "index_daily_change": { "name": "Tagesveränderung" },
-      "index_fifty_day_average": { "name": "50-Tage-Durchschnitt" },
-      "index_two_hundred_day_average": { "name": "200-Tage-Durchschnitt" },
-      "index_fifty_two_week_high": { "name": "52-Wochen-Hoch" },
-      "index_fifty_two_week_low": { "name": "52-Wochen-Tief" },
-      "index_day_high": { "name": "Tageshoch" },
-      "index_day_low": { "name": "Tagestief" },
-      "index_market_state": { "name": "Marktstatus" },
-      "index_history": { "name": "Historische Indexdaten (30 Tage)" },
-      "crypto_high_24h": { "name": "24-Stunden-Hoch" },
-      "crypto_low_24h": { "name": "24-Stunden-Tief" },
-      "crypto_volume_24h": { "name": "24-Stunden-Volumen" },
-      "crypto_ath": { "name": "Allzeithoch" },
-      "crypto_atl": { "name": "Allzeittief" },
-      "crypto_circulating_supply": { "name": "Umlaufmenge" },
-      "crypto_fully_diluted_valuation": { "name": "Vollständig verwässerte Bewertung" },
-      "crypto_history": { "name": "Historische Kryptodaten (30 Tage)" },
-      "crypto_market_cap": { "name": "Marktkapitalisierung" },
-      "crypto_market_cap_change_24h": { "name": "Marktkapitalisierungsänderung 24 h" },
-      "crypto_market_cap_rank": { "name": "Marktkapitalisierungsrang" },
-      "crypto_price_change_24h": { "name": "Kursänderung 24 h" },
-      "crypto_total_supply": { "name": "Gesamtmenge" },
-      "stock_fifty_day_average": { "name": "50-Tage-Durchschnitt" },
-      "stock_fifty_two_week_high": { "name": "52-Wochen-Hoch" },
-      "stock_fifty_two_week_low": { "name": "52-Wochen-Tief" },
-      "stock_two_hundred_day_average": { "name": "200-Tage-Durchschnitt" },
-      "stock_average_analyst_rating": { "name": "Durchschnittliche Analystenbewertung" },
-      "stock_average_volume_3month": { "name": "Durchschnittsvolumen (3 Monate)" },
-      "stock_average_volume_10day": { "name": "Durchschnittsvolumen (10 Tage)" },
-      "stock_bid": { "name": "Geldkurs" },
-      "stock_bid_size": { "name": "Geldkursvolumen" },
-      "stock_book_value": { "name": "Buchwert" },
-      "stock_day_high": { "name": "Tageshoch" },
-      "stock_day_low": { "name": "Tagestief" },
-      "stock_dividend_rate": { "name": "Dividendenbetrag" },
-      "stock_dividend_yield": { "name": "Dividendenrendite" },
-      "stock_earnings_per_share": { "name": "Gewinn je Aktie (EPS)" },
-      "stock_history": { "name": "Historische Aktiendaten (30 Tage)" },
-      "stock_market_cap": { "name": "Marktkapitalisierung" },
-      "stock_market_state": { "name": "Marktstatus" },
-      "stock_price_earnings_ratio": { "name": "Kurs-Gewinn-Verhältnis (KGV)" },
-      "stock_shares_outstanding": { "name": "Ausstehende Aktien" },
-      "stock_symbol": { "name": "Symbol" },
-      "stock_volume": { "name": "Volumen" }
+      "portfolio_value": {
+        "name": "Wert"
+      },
+      "portfolio_cost": {
+        "name": "Einstandswert"
+      },
+      "portfolio_gain": {
+        "name": "Gewinn/Verlust"
+      },
+      "portfolio_realized_gain": {
+        "name": "Realisierter Gewinn/Verlust"
+      },
+      "portfolio_fees": {
+        "name": "Transaktionsgebühren"
+      },
+      "portfolio_taxes": {
+        "name": "Transaktionssteuern"
+      },
+      "portfolio_purchases": {
+        "name": "Käufe kumuliert"
+      },
+      "portfolio_sales": {
+        "name": "Verkäufe kumuliert"
+      },
+      "portfolio_net_invested": {
+        "name": "Netto investiertes Kapital"
+      },
+      "portfolio_total_gain": {
+        "name": "Gesamter Gewinn/Verlust"
+      },
+      "portfolio_total_return": {
+        "name": "Gesamtrendite"
+      },
+      "portfolio_transaction_count": {
+        "name": "Anzahl Transaktionen"
+      },
+      "portfolio_time_weighted_return": {
+        "name": "Zeitgewichtete Rendite"
+      },
+      "portfolio_benchmark_return": {
+        "name": "Rendite des Vergleichsindex"
+      },
+      "portfolio_excess_return": {
+        "name": "Überrendite"
+      },
+      "portfolio_performance_history": {
+        "name": "Professioneller Performanceverlauf"
+      },
+      "portfolio_gain_percent": {
+        "name": "Rendite"
+      },
+      "portfolio_daily_change": {
+        "name": "Tagesveränderung"
+      },
+      "holding_price": {
+        "name": "Kurs"
+      },
+      "holding_quantity": {
+        "name": "Bestand"
+      },
+      "holding_purchase_price": {
+        "name": "Durchschnittlicher Kaufpreis"
+      },
+      "holding_cost": {
+        "name": "Einstandswert"
+      },
+      "holding_value": {
+        "name": "Wert"
+      },
+      "holding_gain": {
+        "name": "Gewinn/Verlust"
+      },
+      "holding_realized_gain": {
+        "name": "Realisierter Gewinn/Verlust"
+      },
+      "holding_fees": {
+        "name": "Transaktionsgebühren"
+      },
+      "holding_taxes": {
+        "name": "Transaktionssteuern"
+      },
+      "holding_transactions": {
+        "name": "Transaktionen"
+      },
+      "holding_gain_percent": {
+        "name": "Rendite"
+      },
+      "holding_daily_change": {
+        "name": "Tagesveränderung"
+      },
+      "holding_previous_close": {
+        "name": "Vorheriger Schlusskurs"
+      },
+      "index_price": {
+        "name": "Indexstand"
+      },
+      "index_previous_close": {
+        "name": "Vorheriger Schlussstand"
+      },
+      "index_daily_change": {
+        "name": "Tagesveränderung"
+      },
+      "index_fifty_day_average": {
+        "name": "50-Tage-Durchschnitt"
+      },
+      "index_two_hundred_day_average": {
+        "name": "200-Tage-Durchschnitt"
+      },
+      "index_fifty_two_week_high": {
+        "name": "52-Wochen-Hoch"
+      },
+      "index_fifty_two_week_low": {
+        "name": "52-Wochen-Tief"
+      },
+      "index_day_high": {
+        "name": "Tageshoch"
+      },
+      "index_day_low": {
+        "name": "Tagestief"
+      },
+      "index_market_state": {
+        "name": "Marktstatus"
+      },
+      "index_history": {
+        "name": "Historische Indexdaten (30 Tage)"
+      },
+      "crypto_high_24h": {
+        "name": "24-Stunden-Hoch"
+      },
+      "crypto_low_24h": {
+        "name": "24-Stunden-Tief"
+      },
+      "crypto_volume_24h": {
+        "name": "24-Stunden-Volumen"
+      },
+      "crypto_ath": {
+        "name": "Allzeithoch"
+      },
+      "crypto_atl": {
+        "name": "Allzeittief"
+      },
+      "crypto_circulating_supply": {
+        "name": "Umlaufmenge"
+      },
+      "crypto_fully_diluted_valuation": {
+        "name": "Vollständig verwässerte Bewertung"
+      },
+      "crypto_history": {
+        "name": "Historische Kryptodaten (30 Tage)"
+      },
+      "crypto_market_cap": {
+        "name": "Marktkapitalisierung"
+      },
+      "crypto_market_cap_change_24h": {
+        "name": "Marktkapitalisierungsänderung 24 h"
+      },
+      "crypto_market_cap_rank": {
+        "name": "Marktkapitalisierungsrang"
+      },
+      "crypto_price_change_24h": {
+        "name": "Kursänderung 24 h"
+      },
+      "crypto_total_supply": {
+        "name": "Gesamtmenge"
+      },
+      "stock_fifty_day_average": {
+        "name": "50-Tage-Durchschnitt"
+      },
+      "stock_fifty_two_week_high": {
+        "name": "52-Wochen-Hoch"
+      },
+      "stock_fifty_two_week_low": {
+        "name": "52-Wochen-Tief"
+      },
+      "stock_two_hundred_day_average": {
+        "name": "200-Tage-Durchschnitt"
+      },
+      "stock_average_analyst_rating": {
+        "name": "Durchschnittliche Analystenbewertung"
+      },
+      "stock_average_volume_3month": {
+        "name": "Durchschnittsvolumen (3 Monate)"
+      },
+      "stock_average_volume_10day": {
+        "name": "Durchschnittsvolumen (10 Tage)"
+      },
+      "stock_bid": {
+        "name": "Geldkurs"
+      },
+      "stock_bid_size": {
+        "name": "Geldkursvolumen"
+      },
+      "stock_book_value": {
+        "name": "Buchwert"
+      },
+      "stock_day_high": {
+        "name": "Tageshoch"
+      },
+      "stock_day_low": {
+        "name": "Tagestief"
+      },
+      "stock_dividend_rate": {
+        "name": "Dividendenbetrag"
+      },
+      "stock_dividend_yield": {
+        "name": "Dividendenrendite"
+      },
+      "stock_earnings_per_share": {
+        "name": "Gewinn je Aktie (EPS)"
+      },
+      "stock_history": {
+        "name": "Historische Aktiendaten (30 Tage)"
+      },
+      "stock_market_cap": {
+        "name": "Marktkapitalisierung"
+      },
+      "stock_market_state": {
+        "name": "Marktstatus"
+      },
+      "stock_price_earnings_ratio": {
+        "name": "Kurs-Gewinn-Verhältnis (KGV)"
+      },
+      "stock_shares_outstanding": {
+        "name": "Ausstehende Aktien"
+      },
+      "stock_symbol": {
+        "name": "Symbol"
+      },
+      "stock_volume": {
+        "name": "Volumen"
+      }
     },
     "binary_sensor": {
-      "price_alert_below": { "name": "Kursalarm unterschritten" },
-      "price_alert_above": { "name": "Kursalarm überschritten" }
+      "price_alert_below": {
+        "name": "Kursalarm unterschritten"
+      },
+      "price_alert_above": {
+        "name": "Kursalarm überschritten"
+      }
+    }
+  },
+  "services": {
+    "swissquote_lookup": {
+      "name": "Swissquote-Abfrage",
+      "description": "Zeigt die Swissquote-Listings für ein Symbol oder eine ISIN und welches Listing der Portfolio Tracker verwenden würde.",
+      "fields": {
+        "symbol": {
+          "name": "Symbol",
+          "description": "Symbol im Yahoo-Format, z. B. WINC, NOVN.SW oder SAP.DE."
+        },
+        "isin": {
+          "name": "ISIN",
+          "description": "Optionale ISIN, um das Listing festzulegen."
+        },
+        "exchange_id": {
+          "name": "Börsen-ID",
+          "description": "Optionale Swissquote-Börsen-ID."
+        }
+      }
     }
   }
 }

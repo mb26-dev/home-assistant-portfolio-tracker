@@ -77,7 +77,13 @@
         "title": "Impostazioni generali",
         "data": {
           "base_currency": "Valuta base",
-          "update_interval": "Intervallo di aggiornamento"
+          "update_interval": "Intervallo di aggiornamento",
+          "swissquote_primary": "Usa prima Swissquote per azioni, ETF e fondi",
+          "swissquote_mappings": "Associazioni Swissquote (facoltativo)"
+        },
+        "data_description": {
+          "swissquote_primary": "Le quotazioni di azioni, ETF e fondi vengono caricate prima da Swissquote. Se Swissquote non trova una quotazione univoca, si usa Yahoo Finance.",
+          "swissquote_mappings": "Una riga per simbolo: SIMBOLO = ISIN, SIMBOLO = ISIN@ID_BORSA oppure SIMBOLO = @ID_BORSA. Esempio: AAPL = US0378331005."
         }
       },
       "add_holding": {
@@ -272,7 +278,8 @@
       "invalid_valor": "Il numero di valore svizzero può contenere al massimo nove cifre.",
       "swissquote_cannot_connect": "Impossibile connettersi a Swissquote.",
       "swissquote_warrant_not_found": "Swissquote non ha trovato questo numero di valore nella sede di negoziazione selezionata.",
-      "insufficient_quantity": "Questa vendita supererebbe la quantità disponibile alla data selezionata."
+      "insufficient_quantity": "Questa vendita supererebbe la quantità disponibile alla data selezionata.",
+      "invalid_swissquote_mapping": "Associazione Swissquote non valida. Formato: SIMBOLO = ISIN, SIMBOLO = ISIN@ID_BORSA oppure SIMBOLO = @ID_BORSA, una per riga."
     }
   },
   "selector": {
@@ -569,6 +576,26 @@
       },
       "price_alert_above": {
         "name": "Allarme prezzo superiore"
+      }
+    }
+  },
+  "services": {
+    "swissquote_lookup": {
+      "name": "Ricerca Swissquote",
+      "description": "Mostra le quotazioni Swissquote per un simbolo o un ISIN e quale userebbe il portfolio tracker.",
+      "fields": {
+        "symbol": {
+          "name": "Simbolo",
+          "description": "Simbolo in formato Yahoo, ad es. WINC, NOVN.SW o SAP.DE."
+        },
+        "isin": {
+          "name": "ISIN",
+          "description": "ISIN facoltativo per fissare la quotazione."
+        },
+        "exchange_id": {
+          "name": "ID borsa",
+          "description": "ID borsa Swissquote facoltativo."
+        }
       }
     }
   }

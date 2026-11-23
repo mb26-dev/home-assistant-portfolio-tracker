@@ -1,5 +1,9 @@
 # Portfolio Tracker für Home Assistant
 
+<p align="center">
+  <img src="custom_components/portfolio_tracker/brand/icon@2x.png" alt="Portfolio Tracker logo" width="220">
+</p>
+
 [English](README.md) | [Deutsch](README.de.md)
 
 [![GitHub Release](https://img.shields.io/github/v/release/DjangoToni/home-assistant-portfolio-tracker)](https://github.com/DjangoToni/home-assistant-portfolio-tracker/releases)

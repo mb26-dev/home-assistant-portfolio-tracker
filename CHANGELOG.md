@@ -2,6 +2,10 @@
 
 All notable changes to Portfolio Tracker are documented here.
 
+## 1.8.3.4 - 2026-11-23
+
+- New logo and integration icon (brand images for the HA UI and HACS).
+
 ## 1.8.3.3 - 2026-11-21
 
 - ETFs, funds and other assets now get the 30-day history sensor like stocks.
